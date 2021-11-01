@@ -1,4 +1,6 @@
 import knex from "./knex";
+import appSearch from "./appSearch";
+import { getTaskById } from "./listTasks";
 
 export async function createTask(req, res) {
   if (!req.body || typeof req.body === "string") {
@@ -23,6 +25,11 @@ export async function createTask(req, res) {
   if (Array.isArray(tags)) {
     await setTaskTags({ taskId, tags });
   }
+
+  const taskDocument = await getTaskById(taskId);
+  const appSearchResult = await appSearch.indexDocuments("tasks", [
+    taskDocument,
+  ]);
 
   res.status(201).end();
 }
@@ -55,6 +62,11 @@ export async function updateTask(req, res) {
   if (Array.isArray(tags)) {
     await setTaskTags({ taskId, tags });
   }
+
+  const taskDocument = await getTaskById(taskId);
+  const appSearchResult = await appSearch.indexDocuments("tasks", [
+    taskDocument,
+  ]);
 
   res.status(200).end();
 }
