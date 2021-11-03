@@ -1,101 +1,48 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import EditTask from "../components/EditTask";
 
 export default function Admin() {
+  const [tasks, refreshTasks] = useTasks([]);
+  const [editingTasks, startEditing, stopEditing] = useEditingTasks({});
   const [newTask, setNewTask] = useState({});
-  const [tasks, setTasks] = useState([]);
-  const [editingTasks, setEditingTasks] = useState({});
 
-  useEffect(async () => {
-    await refreshTasks();
-  }, []);
+  const newTaskOnChange = useCallback(
+    (field, value) => {
+      setNewTask((prevState) => ({ ...prevState, [field]: value }));
+    },
+    [setNewTask]
+  );
 
-  const refreshTasks = async () => {
-    const res = await fetch("/api/tasks");
-    const json = await res.json();
-    setTasks(json);
-  };
-
-  const newTaskOnChange = (field, value) => {
-    setNewTask({ ...newTask, [field]: value });
-  };
-
-  const newTaskOnSubmit = () => {
-    const postTask = async () => {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        body: JSON.stringify(normalizeRequestBody(newTask)),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
+  const newTaskOnSubmit = useCallback(() => {
+    fetch("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(normalizeRequestBody(newTask)),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => {
       if (res.status === 201) {
-        await refreshTasks();
-        setNewTask({});
+        return refreshTasks().then(() => setNewTask({}));
       }
-    };
+    });
+  }, [newTask, setNewTask, refreshTasks]);
 
-    postTask().then();
-  };
-
-  const startEditing = (taskId, task) => {
-    setEditingTasks({ ...editingTasks, [taskId]: task });
-  };
-
-  const stopEditing = (taskId) => {
-    const newState = { ...editingTasks };
-    delete newState[taskId];
-    setEditingTasks(newState);
-  };
-
-  const normalizeRequestBody = (task) => {
-    const copy = { ...task };
-
-    if (Array.isArray(copy.tags)) {
-      copy.tags = copy.tags.filter((tag) => tag.toString().trim() !== "");
-    }
-
-    return copy;
-  };
-
-  const existingTaskOnSubmit = (taskId) => {
-    const editingTask = editingTasks[taskId];
-
-    const postTask = async () => {
-      const res = await fetch(`/api/tasks/${taskId}`, {
+  const updateTaskRequest = useCallback(
+    (taskId, payload) => {
+      return fetch(`/api/tasks/${taskId}`, {
         method: "PUT",
-        body: JSON.stringify(normalizeRequestBody(editingTask)),
+        body: JSON.stringify(payload),
         headers: {
           "Content-Type": "application/json",
         },
+      }).then((res) => {
+        if (res.status === 200) {
+          return refreshTasks().then(() => stopEditing(taskId));
+        }
       });
-
-      if (res.status === 200) {
-        await refreshTasks();
-        stopEditing(taskId);
-      }
-    };
-
-    postTask().then();
-  };
-
-  const onCompletedChange = (taskId, value) => {
-    const postTask = async () => {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: "PUT",
-        body: JSON.stringify({ completed: value }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.status === 200) {
-        await refreshTasks();
-      }
-    };
-
-    postTask().then();
-  };
+    },
+    [refreshTasks, stopEditing]
+  );
 
   return (
     <div>
@@ -107,32 +54,33 @@ export default function Admin() {
             task={newTask}
             buttonText="Create"
             onChange={newTaskOnChange}
-            onSubmit={newTaskOnSubmit}
+            onButtonClick={newTaskOnSubmit}
           />
         </li>
         {tasks.map((task) => {
           const editingTask = editingTasks[task.id];
-
-          const existingTaskOnChange = (field, value) => {
-            startEditing(task.id, { ...editingTask, [field]: value });
-          };
 
           return (
             <li key={task.id} style={{ marginTop: "12px" }}>
               {task.id in editingTasks ? (
                 <EditTask
                   task={editingTask}
-                  onChange={existingTaskOnChange}
-                  onSubmit={existingTaskOnSubmit.bind(null, task.id)}
+                  onChange={(field, value) => {
+                    startEditing(task.id, { ...editingTask, [field]: value });
+                  }}
+                  onButtonClick={() => {
+                    const payload = normalizeRequestBody(editingTask);
+                    updateTaskRequest(task.id, payload);
+                  }}
                 />
               ) : (
                 <EditTask
                   task={task}
                   buttonText="Edit"
                   onChange={() => {}}
-                  onSubmit={() => startEditing(task.id, { ...task })}
+                  onButtonClick={() => startEditing(task.id, { ...task })}
                   onCompletedChange={(value) =>
-                    onCompletedChange(task.id, value)
+                    updateTaskRequest(task.id, { completed: value })
                   }
                 />
               )}
@@ -144,102 +92,52 @@ export default function Admin() {
   );
 }
 
-function EditTask({
-  task,
-  buttonText = "Save",
-  onChange,
-  onCompletedChange,
-  onSubmit,
-}) {
-  const { title, assignee, completed, points, tags } = task;
+function useTasks(initialValue) {
+  const [tasks, setTasks] = useState(initialValue);
 
-  let allTags = [];
-  if (Array.isArray(tags)) {
-    allTags = [...tags];
-  }
+  useEffect(async () => {
+    await refreshTasks();
+  }, []);
 
-  if (allTags[allTags.length - 1] !== "") {
-    allTags.push("");
-  }
+  const refreshTasks = useCallback(async () => {
+    const res = await fetch("/api/tasks");
+    const json = await res.json();
+    setTasks(json);
+  }, [setTasks]);
 
-  return (
-    <>
-      <div>
-        {"id" in task && (
-          <>
-            <input
-              type="checkbox"
-              checked={!!completed}
-              disabled={!onCompletedChange}
-              onChange={(e) => onCompletedChange(e.target.checked)}
-            />{" "}
-          </>
-        )}
-        <input
-          type="text"
-          placeholder="Task"
-          style={{ width: "300px", fontSize: "18px", fontWeight: "bold" }}
-          value={title || ""}
-          onChange={(e) => onChange("title", e.target.value)}
-        />{" "}
-        <input
-          type="text"
-          placeholder="Assignee"
-          style={{ fontSize: "18px" }}
-          value={assignee || ""}
-          onChange={(e) => onChange("assignee", e.target.value)}
-        />{" "}
-        <input
-          type="number"
-          placeholder="Points"
-          style={{ width: "100px", fontSize: "18px" }}
-          value={points || ""}
-          onChange={(e) => onChange("points", e.target.value)}
-          min="0"
-        />{" "}
-        {buttonText && (
-          <button type="button" onClick={onSubmit}>
-            {buttonText}
-          </button>
-        )}
-      </div>
-      <div style={{ marginTop: "4px" }}>
-        <span title="Tags">🏷</span>{" "}
-        {allTags.map((tag, tagIndex) => {
-          return (
-            <input
-              type="text"
-              key={tagIndex}
-              value={tag}
-              style={{
-                width: "100px",
-                fontSize: "12px",
-                marginRight: "4px",
-                borderRadius: "12px",
-              }}
-              onChange={(e) => {
-                let newTags = [];
+  return [tasks, refreshTasks];
+}
 
-                if (Array.isArray(tags)) {
-                  newTags = [...tags];
-                }
+function useEditingTasks(initialValue) {
+  const [editingTasks, setEditingTasks] = useState(initialValue);
 
-                newTags[tagIndex] = e.target.value;
-
-                if (
-                  Array.isArray(tags) &&
-                  tags.length > 1 &&
-                  newTags[tagIndex] === ""
-                ) {
-                  newTags.splice(tagIndex, 1);
-                }
-
-                onChange("tags", newTags);
-              }}
-            />
-          );
-        })}
-      </div>
-    </>
+  const startEditing = useCallback(
+    (taskId, task) => {
+      setEditingTasks((prevState) => ({ ...prevState, [taskId]: task }));
+    },
+    [setEditingTasks]
   );
+
+  const stopEditing = useCallback(
+    (taskId) => {
+      setEditingTasks((prevState) => {
+        const newState = { ...prevState };
+        delete newState[taskId];
+        return newState;
+      });
+    },
+    [setEditingTasks]
+  );
+
+  return [editingTasks, startEditing, stopEditing];
+}
+
+function normalizeRequestBody(task) {
+  const copy = { ...task };
+
+  if (Array.isArray(copy.tags)) {
+    copy.tags = copy.tags.filter((tag) => tag.toString().trim() !== "");
+  }
+
+  return copy;
 }
