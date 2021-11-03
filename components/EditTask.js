@@ -7,21 +7,21 @@ export default function EditTask({
   onCompletedChange,
   onButtonClick,
 }) {
-  const { title, assignee, completed, points, tags } = task;
+  const { title, assignee, completed, points, labels } = task;
 
   useEffect(() => {
-    if (!Array.isArray(tags)) {
-      return onChange("tags", [""]);
+    if (!Array.isArray(labels)) {
+      return onChange("labels", [""]);
     }
 
-    let newTags = tags.filter((tag) => tag !== "");
-    if (newTags.length === 0 || newTags[newTags.length - 1] !== "") {
-      newTags.push("");
+    let newLabels = labels.filter((label) => label !== "");
+    if (newLabels.length === 0 || newLabels[newLabels.length - 1] !== "") {
+      newLabels.push("");
     }
-    if (tags.length !== newTags.length) {
-      onChange("tags", newTags);
+    if (labels.length !== newLabels.length) {
+      onChange("labels", newLabels);
     }
-  }, [onChange, tags]);
+  }, [onChange, labels]);
 
   return (
     <>
@@ -74,14 +74,14 @@ export default function EditTask({
         )}
       </div>
       <div style={{ marginTop: "4px" }}>
-        <span title="Tags">🏷</span>{" "}
-        {Array.isArray(tags) &&
-          tags.map((tag, tagIndex) => {
+        <span title="Labels">🏷</span>{" "}
+        {Array.isArray(labels) &&
+          labels.map((label, labelIndex) => {
             return (
               <input
                 type="text"
-                key={tagIndex}
-                value={tag}
+                key={labelIndex}
+                value={label}
                 style={{
                   border: "1px solid #ddd",
                   width: "100px",
@@ -91,9 +91,9 @@ export default function EditTask({
                   borderRadius: "12px",
                 }}
                 onChange={(e) => {
-                  let newTags = [...tags];
-                  newTags[tagIndex] = e.target.value;
-                  onChange("tags", newTags);
+                  let newLabels = [...labels];
+                  newLabels[labelIndex] = e.target.value;
+                  onChange("labels", newLabels);
                 }}
               />
             );

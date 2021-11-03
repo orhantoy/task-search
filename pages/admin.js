@@ -135,8 +135,8 @@ function useEditingTasks(initialValue) {
 function normalizeRequestBody(task) {
   const copy = { ...task };
 
-  if (Array.isArray(copy.tags)) {
-    copy.tags = copy.tags.filter((tag) => tag.toString().trim() !== "");
+  if (Array.isArray(copy.labels)) {
+    copy.labels = copy.labels.filter((label) => label.toString().trim() !== "");
   }
 
   return copy;
