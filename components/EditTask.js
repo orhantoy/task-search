@@ -39,27 +39,36 @@ export default function EditTask({
         <input
           type="text"
           placeholder="Task"
-          style={{ width: "300px", fontSize: "18px", fontWeight: "bold" }}
+          style={{
+            border: "1px solid #bbb",
+            width: "300px",
+            fontSize: "18px",
+            fontWeight: "bold",
+          }}
           value={title || ""}
           onChange={(e) => onChange("title", e.target.value)}
         />{" "}
         <input
           type="text"
           placeholder="Assignee"
-          style={{ fontSize: "18px" }}
+          style={{ border: "1px solid #bbb", fontSize: "18px" }}
           value={assignee || ""}
           onChange={(e) => onChange("assignee", e.target.value)}
         />{" "}
         <input
           type="number"
           placeholder="Points"
-          style={{ width: "100px", fontSize: "18px" }}
+          style={{ border: "1px solid #bbb", width: "100px", fontSize: "18px" }}
           value={points || ""}
           onChange={(e) => onChange("points", e.target.value)}
           min="0"
         />{" "}
         {buttonText && (
-          <button type="button" onClick={onButtonClick}>
+          <button
+            type="button"
+            onClick={onButtonClick}
+            style={{ fontSize: "16px" }}
+          >
             {buttonText}
           </button>
         )}
@@ -74,9 +83,11 @@ export default function EditTask({
                 key={tagIndex}
                 value={tag}
                 style={{
+                  border: "1px solid #ddd",
                   width: "100px",
                   fontSize: "12px",
                   marginRight: "4px",
+                  padding: "2px 4px",
                   borderRadius: "12px",
                 }}
                 onChange={(e) => {
