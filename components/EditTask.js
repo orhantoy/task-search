@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export default function EditTask({
   task,
   buttonText = "Save",
@@ -7,14 +9,19 @@ export default function EditTask({
 }) {
   const { title, assignee, completed, points, tags } = task;
 
-  let allTags = [];
-  if (Array.isArray(tags)) {
-    allTags = [...tags];
-  }
+  useEffect(() => {
+    if (!Array.isArray(tags)) {
+      return onChange("tags", [""]);
+    }
 
-  if (allTags.length === 0 || allTags[allTags.length - 1] !== "") {
-    allTags.push("");
-  }
+    let newTags = tags.filter((tag) => tag !== "");
+    if (newTags.length === 0 || newTags[newTags.length - 1] !== "") {
+      newTags.push("");
+    }
+    if (tags.length !== newTags.length) {
+      onChange("tags", newTags);
+    }
+  }, [onChange, tags]);
 
   return (
     <>
@@ -59,40 +66,27 @@ export default function EditTask({
       </div>
       <div style={{ marginTop: "4px" }}>
         <span title="Tags">🏷</span>{" "}
-        {allTags.map((tag, tagIndex) => {
-          return (
-            <input
-              type="text"
-              key={tagIndex}
-              value={tag}
-              style={{
-                width: "100px",
-                fontSize: "12px",
-                marginRight: "4px",
-                borderRadius: "12px",
-              }}
-              onChange={(e) => {
-                let newTags = [];
-
-                if (Array.isArray(tags)) {
-                  newTags = [...tags];
-                }
-
-                newTags[tagIndex] = e.target.value;
-
-                if (
-                  Array.isArray(tags) &&
-                  tags.length > 1 &&
-                  newTags[tagIndex] === ""
-                ) {
-                  newTags.splice(tagIndex, 1);
-                }
-
-                onChange("tags", newTags);
-              }}
-            />
-          );
-        })}
+        {Array.isArray(tags) &&
+          tags.map((tag, tagIndex) => {
+            return (
+              <input
+                type="text"
+                key={tagIndex}
+                value={tag}
+                style={{
+                  width: "100px",
+                  fontSize: "12px",
+                  marginRight: "4px",
+                  borderRadius: "12px",
+                }}
+                onChange={(e) => {
+                  let newTags = [...tags];
+                  newTags[tagIndex] = e.target.value;
+                  onChange("tags", newTags);
+                }}
+              />
+            );
+          })}
       </div>
     </>
   );
