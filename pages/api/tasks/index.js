@@ -1,6 +1,6 @@
-import { setup as databaseSetup } from "../../../db/knex";
-import { listAllTasks } from "../../../db/listTasks";
-import { createTask } from "../../../db/manageTasks";
+import { setup as databaseSetup } from "../../../lib/db/knex";
+import { listAllTasks } from "../../../lib/db/listTasks";
+import { createTask } from "../../../lib/db/manageTasks";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {

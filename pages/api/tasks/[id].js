@@ -1,4 +1,4 @@
-import { updateTask } from "../../../db/manageTasks";
+import { updateTask } from "../../../lib/db/manageTasks";
 
 export default async function handler(req, res) {
   if (req.method === "PUT") {
