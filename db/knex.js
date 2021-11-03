@@ -1,6 +1,11 @@
 let knex = null;
+let setupDone = false;
 
-async function setupTables() {
+export async function setup() {
+  if (setupDone) {
+    return;
+  }
+
   const exists = await knex.schema.hasTable("tasks");
 
   if (!exists) {
@@ -24,22 +29,18 @@ async function setupTables() {
       t.foreign("tag_id").references("id").inTable("tags");
     });
   }
+
+  setupDone = true;
 }
 
 if (knex === null) {
   knex = require("knex")({
     client: "sqlite3",
     connection: () => ({
-      filename: process.env.SQLITE_FILENAME || 'tasks.db',
+      filename: process.env.SQLITE_FILENAME || "tasks.db",
     }),
     useNullAsDefault: true,
   });
-
-  setupTables()
-    .then(() => {})
-    .catch((error) =>
-      console.error("Unexpected error when setting up tables", error)
-    );
 }
 
 export default knex;
